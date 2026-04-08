@@ -1,11 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>WeatherNow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'navy-900': '#0a1628',
+                        'navy-800': '#0f2744',
+                        'navy-700': '#1e3a5f',
+                        'navy-600': '#2a4f7c',
+                        'navy-500': '#3a6fa8',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    
+
+<body class="min-h-screen text-white transition-all duration-500">
+
+    <!-- Rain overlay -->
+    <div id="rain-overlay" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
+
+    <!-- Main container -->
+    <div class="relative z-10 min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="text-center py-8 px-4">
+            <h1 class="text-4xl sm:text-5xl font-bold tracking-tight drop-shadow-lg">
+                ⛅ WeatherNow
+            </h1>
+            <p class="mt-2 text-blue-200 text-sm sm:text-base opacity-80">
+                Real-time weather forecasts at your fingertips
+            </p>
+        </header>
+
+        <!-- Search Section -->
+        <section class="px-4 max-w-2xl mx-auto w-full">
+
+            <!-- Error box -->
+            <div id="error-box"
+                class="hidden mb-4 flex items-start gap-3 bg-red-900/80 border border-red-500 text-red-100 px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm"
+                role="alert">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9V7a1 1 0 112 0v2a1 1 0 11-2 0zm0 4a1 1 0 112 0 1 1 0 01-2 0z"
+                        clip-rule="evenodd" />
+                </svg>
+                <span id="error-message" class="flex-1 text-sm"></span>
+                <button id="error-close" class="text-red-300 hover:text-white transition-colors ml-2"
+                    aria-label="Close error">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Alert box (extreme temperature) -->
+            <div id="alert-box"
+                class="hidden mb-4 flex items-start gap-3 bg-orange-900/80 border border-orange-500 text-orange-100 px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm"
+                role="alert">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clip-rule="evenodd" />
+                </svg>
+                <span id="alert-message" class="flex-1 text-sm"></span>
+                <button id="alert-close" class="text-orange-300 hover:text-white transition-colors ml-2"
+                    aria-label="Close alert">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Search bar -->
+            <div class="relative">
+                <div class="flex gap-2 items-center">
+                    <!-- Input wrapper (relative for dropdown) -->
+                    <div class="relative flex-1">
+                        <input id="city-input" type="text" placeholder="Search city name..." autocomplete="off" class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200/60
+                     focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
+                     backdrop-blur-sm transition-all duration-200 text-sm sm:text-base" />
+                        <!-- Recent cities dropdown -->
+                        <div id="dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-navy-800/95 border border-white/20
+                        rounded-xl shadow-2xl backdrop-blur-md overflow-hidden z-50 max-h-64 overflow-y-auto">
+                            <div id="dropdown-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Search button -->
+                    <button id="search-btn" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold
+                   rounded-xl transition-all duration-200 shadow-lg hover:shadow-blue-500/30
+                   flex items-center gap-2 text-sm sm:text-base whitespace-nowrap">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+                        </svg>
+                        Search
+                    </button>
+
+                    <!-- GPS location button -->
+                    <button id="location-btn" title="Use my current location" class="p-3 bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white
+                   rounded-xl transition-all duration-200 shadow-lg hover:shadow-teal-500/30"
+                        aria-label="Search by current GPS location">
+                        📍
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading spinner -->
+        <div id="loading" class="hidden flex-col items-center justify-center py-16 gap-4">
+            <div class="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-blue-200 text-sm">Fetching weather data...</p>
+        </div>
+
+        <!-- Weather content -->
+        <main id="weather-content" class="hidden flex-1 px-4 pb-10 max-w-5xl mx-auto w-full mt-6">
+
+            <!-- Current Weather Card -->
+            <div id="current-weather-card"
+                class="rounded-2xl p-6 sm:p-8 mb-8 shadow-2xl backdrop-blur-md border border-white/10"
+                style="background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);">
+
+                <!-- City & date row -->
+                <div class="flex flex-wrap justify-between items-start gap-2 mb-4">
+                    <div>
+                        <h2 id="city-name" class="text-2xl sm:text-3xl font-bold"></h2>
+                        <p id="city-date" class="text-blue-200 text-sm mt-1"></p>
+                    </div>
+                    <div id="weather-icon-wrap" class="flex items-center justify-end">
+                        <img id="weather-icon" src="" alt="Weather icon"
+                            class="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-xl" />
+                    </div>
+                </div>
+
+                <!-- Temperature + toggle + description -->
+                <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-end gap-3">
+                            <span id="temp-display"
+                                class="text-6xl sm:text-7xl font-extrabold leading-none tracking-tight"></span>
+                            <!-- Unit toggle buttons -->
+                            <div class="flex flex-col gap-1 pb-1">
+                                <button id="btn-celsius"
+                                    class="unit-btn active px-3 py-1 text-sm font-bold rounded-lg transition-all duration-200">°C</button>
+                                <button id="btn-fahrenheit"
+                                    class="unit-btn px-3 py-1 text-sm font-bold rounded-lg transition-all duration-200">°F</button>
+                            </div>
+                        </div>
+                        <p id="feels-like" class="text-blue-200 text-sm mt-1"></p>
+                        <p id="weather-desc" class="text-white/80 font-medium mt-1 capitalize"></p>
+                    </div>
+                </div>
+
+                <!-- 3 stat boxes -->
+                <div class="grid grid-cols-3 gap-3 sm:gap-4">
+                    <div class="stat-box rounded-xl p-3 sm:p-4 text-center border border-white/10"
+                        style="background: rgba(255,255,255,0.08);">
+                        <div class="text-2xl mb-1">💧</div>
+                        <p id="humidity-val" class="text-lg sm:text-xl font-bold"></p>
+                        <p class="text-blue-200 text-xs sm:text-sm">Humidity</p>
+                    </div>
+                    <div class="stat-box rounded-xl p-3 sm:p-4 text-center border border-white/10"
+                        style="background: rgba(255,255,255,0.08);">
+                        <div class="text-2xl mb-1">🌬️</div>
+                        <p id="wind-val" class="text-lg sm:text-xl font-bold"></p>
+                        <p class="text-blue-200 text-xs sm:text-sm">Wind Speed</p>
+                    </div>
+                    <div class="stat-box rounded-xl p-3 sm:p-4 text-center border border-white/10"
+                        style="background: rgba(255,255,255,0.08);">
+                        <div class="text-2xl mb-1">👁️</div>
+                        <p id="visibility-val" class="text-lg sm:text-xl font-bold"></p>
+                        <p class="text-blue-200 text-xs sm:text-sm">Visibility</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Day Forecast -->
+            <div>
+                <h3 class="text-xl font-semibold mb-4 text-blue-100">5-Day Forecast</h3>
+                <div id="forecast-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                    <!-- Forecast cards injected by JS -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-blue-300/50 text-xs pb-6">
+            Powered by OpenWeatherMap &nbsp;|&nbsp; WeatherNow &copy; 2025
+        </footer>
+
+    </div><!-- end main container -->
+
 </body>
+
 </html>
