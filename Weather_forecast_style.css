@@ -1,0 +1,37 @@
+/* =============================================
+   WeatherNow — style.css
+   ============================================= */
+
+/* ---------- Base body / default (dark blue) ---------- */
+body {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 50%, #0a1628 100%);
+  background-attachment: fixed;
+  transition: background 0.5s ease;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- Weather-condition body classes ---------- */
+
+body.rainy {
+  background: linear-gradient(135deg, #1a2a3a 0%, #0d1f2d 50%, #080f18 100%);
+}
+
+body.stormy {
+  background: linear-gradient(135deg, #1a1428 0%, #0f0d1e 50%, #060410 100%);
+}
+
+body.sunny {
+  background: linear-gradient(135deg, #1a6fb5 0%, #0e4f8a 50%, #083660 100%);
+}
+
+body.cloudy {
+  background: linear-gradient(135deg, #2a3f5a 0%, #1c2e44 50%, #111e2e 100%);
+}
+
+body.snowy {
+  background: linear-gradient(135deg, #2c3e55 0%, #1e2f45 50%, #131f30 100%);
+}
+
+body.foggy {
+  background: linear-gradient(135deg, #2e3a47 0%, #1e2b38 50%, #111a22 100%);
+}
