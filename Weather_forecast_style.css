@@ -98,3 +98,89 @@ body.foggy {
   font-weight: 800;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* ---------- Dropdown items ---------- */
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.dropdown-item .city-icon {
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+/* ---------- Scrollbar styling for dropdown ---------- */
+
+#dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+#dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* ---------- Stat boxes subtle pulse on load ---------- */
+
+.stat-box {
+  transition: transform 0.2s ease;
+}
+
+.stat-box:hover {
+  transform: scale(1.03);
+}
+
+/* ---------- Loading spinner centering ---------- */
+
+#loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Responsive adjustments ---------- */
+
+/* iPad Mini — 768px */
+@media (max-width: 768px) {
+  #current-weather-card {
+    padding: 1.25rem;
+  }
+}
+
+/* iPhone SE — 375px */
+@media (max-width: 375px) {
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  #temp-display {
+    font-size: 3.5rem;
+  }
+
+  .stat-box p:first-of-type {
+    font-size: 1rem;
+  }
+}
