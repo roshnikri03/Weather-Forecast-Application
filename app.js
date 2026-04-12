@@ -127,3 +127,94 @@ function checkExtremeTemp(tempC) {
     );
   }
 }
+
+/* =============================================
+   TEMPERATURE DISPLAY
+   ============================================= */
+
+/**
+ * Update just the main temperature element based on isCelsius flag.
+ * Also refreshes the "Feels like" line.
+ */
+function updateTempDisplay() {
+  if (currentTempC === null) return;
+
+  if (isCelsius) {
+    tempDisplayEl.textContent = `${Math.round(currentTempC)}°C`;
+  } else {
+    tempDisplayEl.textContent = `${Math.round(cToF(currentTempC))}°F`;
+  }
+
+  // Update feels-like line if available
+  if (currentFeelsC !== null) {
+    if (isCelsius) {
+      feelsLikeEl.textContent = `Feels like ${Math.round(currentFeelsC)}°C`;
+    } else {
+      feelsLikeEl.textContent = `Feels like ${Math.round(cToF(currentFeelsC))}°F`;
+    }
+  }
+}
+
+/* =============================================
+   RECENT CITIES (localStorage)
+   ============================================= */
+
+const STORAGE_KEY = 'weathernow_recent_cities';
+
+/** Normalize, deduplicate, keep max 10, save to localStorage */
+function addRecentCity(city) {
+  if (!city || !city.trim()) return;
+
+  const normalized = city.trim().replace(/\b\w/g, c => c.toUpperCase());
+  let cities = getRecentCities();
+
+  // Remove duplicates (case-insensitive) then put at front
+  cities = cities.filter(c => c.toLowerCase() !== normalized.toLowerCase());
+  cities.unshift(normalized);
+
+  if (cities.length > 10) cities = cities.slice(0, 10);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cities));
+}
+
+/** Retrieve recent cities array from localStorage */
+function getRecentCities() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Render (or update) the dropdown list.
+ * @param {string[]} [cities] - filtered cities; defaults to all recent.
+ */
+function renderDropdown(cities) {
+  if (!cities) cities = getRecentCities();
+
+  if (cities.length === 0) {
+    hideDropdown();
+    return;
+  }
+
+  dropdownList.innerHTML = '';
+
+  cities.forEach(city => {
+    const item = document.createElement('div');
+    item.className = 'dropdown-item';
+    item.innerHTML = `<span class="city-icon">🕐</span><span>${city}</span>`;
+    item.addEventListener('click', () => {
+      cityInput.value = city;
+      hideDropdown();
+      triggerSearch();
+    });
+    dropdownList.appendChild(item);
+  });
+
+  dropdown.classList.remove('hidden');
+}
+
+function hideDropdown() {
+  dropdown.classList.add('hidden');
+  dropdownList.innerHTML = '';
+}
