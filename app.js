@@ -65,3 +65,65 @@ function formatDate(date) {
     minute:  '2-digit'
   });
 }
+
+/* =============================================
+   LOADING / ERROR / ALERT UI
+   ============================================= */
+
+function showLoading() {
+  loadingEl.classList.remove('hidden');
+  weatherContent.classList.add('hidden');
+}
+
+function hideLoading() {
+  loadingEl.classList.add('hidden');
+}
+
+function showError(msg) {
+  errorMessage.textContent = msg;
+  errorBox.classList.remove('hidden');
+  weatherContent.classList.add('hidden');
+}
+
+function hideError() {
+  errorBox.classList.add('hidden');
+}
+
+function showAlert(msg) {
+  alertMessage.textContent = msg;
+  alertBox.classList.remove('hidden');
+}
+
+function hideAlert() {
+  alertBox.classList.add('hidden');
+}
+
+/** Map HTTP status codes / API messages to friendly error text */
+function handleApiError(status, apiMsg) {
+  if (status === 401) {
+    showError(
+      'API key rejected (401). If your key is newly created, it can take up to 2 hours to activate. Please wait and try again.'
+    );
+  } else if (status === 404) {
+    showError('City not found. Please check the spelling and try again.');
+  } else if (status === 429) {
+    showError('Too many requests. Please wait a moment and try again.');
+  } else {
+    showError(
+      `Weather service error (${status}): ${apiMsg || 'Unknown error. Please try again later.'}`
+    );
+  }
+}
+
+/** Show a weather alert if temperature is extreme */
+function checkExtremeTemp(tempC) {
+  if (tempC > 40) {
+    showAlert(
+      `⚠️ Extreme heat alert! Current temperature is ${Math.round(tempC)}°C — stay hydrated and avoid prolonged sun exposure.`
+    );
+  } else if (tempC < 0) {
+    showAlert(
+      `❄️ Freezing temperature alert! Current temperature is ${Math.round(tempC)}°C — dress warmly and watch for icy conditions.`
+    );
+  }
+}
