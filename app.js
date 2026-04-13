@@ -291,3 +291,234 @@ function createRainEffect() {
 function clearRainEffect() {
   rainOverlay.innerHTML = '';
 }
+
+/* =============================================
+   DISPLAY FUNCTIONS
+   ============================================= */
+
+/**
+ * Render the current weather card.
+ * Stores temperature values and calls applyDynamicBackground.
+ * @param {object} data - OpenWeatherMap /weather response
+ */
+function displayWeather(data) {
+  // Store temperatures
+  currentTempC  = data.main.temp;
+  currentFeelsC = data.main.feels_like;
+
+  // City name + country
+  cityNameEl.textContent = `${data.name}, ${data.sys.country}`;
+
+  // Current date/time
+  cityDateEl.textContent = formatDate(new Date());
+
+  // Weather icon
+  const iconCode = data.weather[0].icon;
+  weatherIconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  weatherIconEl.alt = data.weather[0].description;
+
+  // Temperature and feels-like (respects isCelsius)
+  updateTempDisplay();
+
+  // Description
+  weatherDescEl.textContent = data.weather[0].description;
+
+  // Stats
+  humidityEl.textContent   = `${data.main.humidity}%`;
+  windEl.textContent       = `${(data.wind.speed * 3.6).toFixed(1)} km/h`;
+  visibilityEl.textContent = (data.visibility !== undefined)
+    ? `${(data.visibility / 1000).toFixed(1)} km`
+    : 'N/A';
+
+  // Show the weather content section
+  weatherContent.classList.remove('hidden');
+
+  // Apply conditional background / rain
+  applyDynamicBackground(data.weather[0].main);
+
+  // Extreme temperature warning
+  checkExtremeTemp(currentTempC);
+}
+
+/**
+ * Render the 5-day forecast cards.
+ * Groups forecast list by calendar day; picks the entry closest to 12:00 noon.
+ * @param {object} data - OpenWeatherMap /forecast response
+ */
+function displayForecast(data) {
+  const list = data.list;
+
+  // Group entries by calendar date string (YYYY-MM-DD)
+  const byDay = {};
+  list.forEach(entry => {
+    const dateStr = entry.dt_txt.split(' ')[0];
+    if (!byDay[dateStr]) byDay[dateStr] = [];
+    byDay[dateStr].push(entry);
+  });
+
+  // Exclude today; take up to 5 upcoming days
+  const todayStr = new Date().toISOString().split('T')[0];
+  const days = Object.keys(byDay)
+    .filter(d => d !== todayStr)
+    .slice(0, 5);
+
+  forecastGrid.innerHTML = '';
+
+  days.forEach(dayStr => {
+    const entries = byDay[dayStr];
+
+    // Pick the entry whose time is closest to 12:00:00
+    const noonEntry = entries.reduce((best, cur) => {
+      const curHour  = parseInt(cur.dt_txt.split(' ')[1].replace(/:/g, ''), 10);
+      const bestHour = parseInt(best.dt_txt.split(' ')[1].replace(/:/g, ''), 10);
+      return Math.abs(curHour - 120000) < Math.abs(bestHour - 120000) ? cur : best;
+    });
+
+    const date    = new Date(noonEntry.dt * 1000);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const dateNum = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const tempC   = Math.round(noonEntry.main.temp);
+    const icon    = noonEntry.weather[0].icon;
+    const desc    = noonEntry.weather[0].description;
+    const wind    = (noonEntry.wind.speed * 3.6).toFixed(1);
+    const hum     = noonEntry.main.humidity;
+
+    const card = document.createElement('div');
+    card.className = 'forecast-card rounded-2xl p-4 border border-white/10 text-center flex flex-col items-center gap-2';
+    card.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)';
+
+    card.innerHTML = `
+      <p class="font-bold text-white text-sm">${dayName}</p>
+      <p class="text-blue-200 text-xs">${dateNum}</p>
+      <img
+        src="https://openweathermap.org/img/wn/${icon}@2x.png"
+        alt="${desc}"
+        class="w-12 h-12 drop-shadow"
+        loading="lazy"
+      />
+      <p class="text-white font-extrabold text-lg">${tempC}°C</p>
+      <p class="text-blue-200 text-xs capitalize leading-tight">${desc}</p>
+      <div class="flex gap-3 mt-1 text-xs text-blue-200/80">
+        <span title="Humidity">💧 ${hum}%</span>
+        <span title="Wind speed">🌬️ ${wind} km/h</span>
+      </div>
+    `;
+
+    forecastGrid.appendChild(card);
+  });
+}
+
+/* =============================================
+   API FETCH FUNCTIONS
+   ============================================= */
+
+/**
+ * Fetch current weather + 5-day forecast by city name (parallel requests).
+ * @param {string} city
+ */
+async function fetchWeatherByCity(city) {
+  showLoading();
+  hideError();
+  hideAlert();
+
+  try {
+    const [weatherRes, forecastRes] = await Promise.all([
+      fetch(`${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`),
+      fetch(`${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`)
+    ]);
+
+    if (!weatherRes.ok) {
+      const errData = await weatherRes.json().catch(() => ({}));
+      handleApiError(weatherRes.status, errData.message);
+      return;
+    }
+
+    if (!forecastRes.ok) {
+      const errData = await forecastRes.json().catch(() => ({}));
+      handleApiError(forecastRes.status, errData.message);
+      return;
+    }
+
+    const weatherData  = await weatherRes.json();
+    const forecastData = await forecastRes.json();
+
+    addRecentCity(weatherData.name); // use API-normalised city name
+    displayWeather(weatherData);
+    displayForecast(forecastData);
+
+  } catch (err) {
+    showError('Network error — please check your internet connection and try again.');
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Fetch current weather + 5-day forecast by GPS coordinates (parallel requests).
+ * @param {number} lat
+ * @param {number} lon
+ */
+async function fetchWeatherByCoords(lat, lon) {
+  showLoading();
+  hideError();
+  hideAlert();
+
+  try {
+    const [weatherRes, forecastRes] = await Promise.all([
+      fetch(`${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`),
+      fetch(`${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`)
+    ]);
+
+    if (!weatherRes.ok) {
+      const errData = await weatherRes.json().catch(() => ({}));
+      handleApiError(weatherRes.status, errData.message);
+      return;
+    }
+
+    if (!forecastRes.ok) {
+      const errData = await forecastRes.json().catch(() => ({}));
+      handleApiError(forecastRes.status, errData.message);
+      return;
+    }
+
+    const weatherData  = await weatherRes.json();
+    const forecastData = await forecastRes.json();
+
+    addRecentCity(weatherData.name);
+    displayWeather(weatherData);
+    displayForecast(forecastData);
+
+  } catch (err) {
+    showError('Network error — please check your internet connection and try again.');
+  } finally {
+    hideLoading();
+  }
+}
+
+/* =============================================
+   SEARCH TRIGGER & VALIDATION
+   ============================================= */
+
+function triggerSearch() {
+  const city = cityInput.value.trim();
+
+  if (!city) {
+    showError('Please enter a city name to search.');
+    return;
+  }
+
+  // Reject purely numeric input
+  if (/^\d+$/.test(city)) {
+    showError('City names cannot be purely numeric. Please enter a valid city name.');
+    return;
+  }
+
+  // Allow letters (including accented), spaces, hyphens, apostrophes, commas, dots
+  if (!/^[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF\s'\-,\.]+$/.test(city)) {
+    showError('City name contains invalid characters. Please use letters, spaces, hyphens, or commas only.');
+    return;
+  }
+
+  hideDropdown();
+  fetchWeatherByCity(city);
+}
