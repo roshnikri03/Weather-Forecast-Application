@@ -218,3 +218,76 @@ function hideDropdown() {
   dropdown.classList.add('hidden');
   dropdownList.innerHTML = '';
 }
+
+/* =============================================
+   DYNAMIC BACKGROUND + RAIN EFFECT
+   ============================================= */
+
+/**
+ * Apply a CSS class on <body> based on weather condition string.
+ * Triggers rain animation for rain/drizzle/thunderstorm conditions.
+ * @param {string} mainWeather - e.g. "Rain", "Clear", "Clouds"
+ */
+function applyDynamicBackground(mainWeather) {
+  const condition = mainWeather.toLowerCase();
+
+  // Remove all condition classes
+  document.body.classList.remove('rainy', 'stormy', 'sunny', 'cloudy', 'snowy', 'foggy');
+  clearRainEffect();
+
+  if (condition.includes('thunderstorm')) {
+    document.body.classList.add('stormy');
+    createRainEffect();
+  } else if (condition.includes('drizzle') || condition.includes('rain')) {
+    document.body.classList.add('rainy');
+    createRainEffect();
+  } else if (condition.includes('snow')) {
+    document.body.classList.add('snowy');
+  } else if (
+    condition.includes('mist')  ||
+    condition.includes('fog')   ||
+    condition.includes('haze')  ||
+    condition.includes('smoke') ||
+    condition.includes('dust')  ||
+    condition.includes('sand')  ||
+    condition.includes('ash')   ||
+    condition.includes('squall')||
+    condition.includes('tornado')
+  ) {
+    document.body.classList.add('foggy');
+  } else if (condition.includes('clear')) {
+    document.body.classList.add('sunny');
+  } else if (condition.includes('cloud')) {
+    document.body.classList.add('cloudy');
+  }
+  // else: default dark-blue gradient remains
+}
+
+/** Create 80 animated raindrop elements inside the rain overlay div */
+function createRainEffect() {
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < 80; i++) {
+    const drop = document.createElement('div');
+    drop.classList.add('raindrop');
+
+    const leftPct  = (Math.random() * 100).toFixed(2);          // 0–100%
+    const height   = Math.floor(Math.random() * 18) + 10;        // 10–28 px
+    const duration = (Math.random() * 0.8 + 0.5).toFixed(2);    // 0.5–1.3 s
+    const delay    = (Math.random() * 2).toFixed(2);             // 0–2 s
+
+    drop.style.left              = `${leftPct}%`;
+    drop.style.height            = `${height}px`;
+    drop.style.animationDuration = `${duration}s`;
+    drop.style.animationDelay   = `-${delay}s`; // negative delay for instant start at random phase
+
+    fragment.appendChild(drop);
+  }
+
+  rainOverlay.appendChild(fragment);
+}
+
+/** Remove all raindrop elements from the overlay */
+function clearRainEffect() {
+  rainOverlay.innerHTML = '';
+}
