@@ -4,6 +4,11 @@ A real-time weather forecast web application built with HTML, Tailwind CSS, and 
 
 ---
 
+## 🔗 GitHub Repository
+
+👉 https: https://github.com/roshnikri03/Weather-Forecast-Application
+👉 Clone using HTTPS: https://github.com/roshnikri03/Weather-Forecast-Application.git
+
 ## Features
 
 - **City search** — type any city name and press Search or Enter
@@ -45,12 +50,12 @@ const API_KEY = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6';
 
 ### 3. Run the application
 
-Simply open `index.html` in any modern web browser — no build tools, no server, no npm install required.
+Simply open `weather_forcasting_page.html` in any modern web browser — no build tools, no server, no npm install required.
 
 ```
-Double-click index.html
+Double-click weather_forcasting_page.html
   OR
-Right-click index.html > Open with > Chrome / Firefox / Edge
+Right-click weather_forcasting_page.html > Open with > Chrome / Firefox / Edge
 ```
 
 > Tip: For the GPS location feature to work, your browser must allow location access. Most browsers require HTTPS or localhost for geolocation; if the 📍 button does not work when opening the file directly, use a local server such as VS Code Live Server.
@@ -75,10 +80,10 @@ Right-click index.html > Open with > Chrome / Firefox / Edge
 
 ```
 Weather project/
-├── index.html   — App shell, Tailwind CDN, all UI markup
-├── style.css    — Weather condition body classes, rain animation, hover effects
-├── app.js       — All JavaScript: fetch, display, validation, events
-└── README.md    — This file
+├── weather_forcasting_page.html  — App shell, Tailwind CDN, all UI markup
+├── weather_forecast_style.css    — Weather condition body classes, rain animation, hover effects
+├── app.js                        — All JavaScript: fetch, display, validation, events
+└── README.md                     — This file
 ```
 
 ---
