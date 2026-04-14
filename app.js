@@ -522,3 +522,111 @@ function triggerSearch() {
   hideDropdown();
   fetchWeatherByCity(city);
 }
+
+/* =============================================
+   EVENT LISTENERS
+   ============================================= */
+
+// Search button click
+searchBtn.addEventListener('click', () => {
+  triggerSearch();
+});
+
+// Enter key in input field
+cityInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    triggerSearch();
+  }
+});
+
+// Typing in input — filter dropdown to matching recent cities
+cityInput.addEventListener('input', () => {
+  const val = cityInput.value.trim().toLowerCase();
+  const all = getRecentCities();
+
+  if (val === '') {
+    if (all.length > 0) renderDropdown(all);
+    else hideDropdown();
+    return;
+  }
+
+  const filtered = all.filter(c => c.toLowerCase().startsWith(val));
+  if (filtered.length > 0) {
+    renderDropdown(filtered);
+  } else {
+    hideDropdown();
+  }
+});
+
+// Focus on input — show all recent cities
+cityInput.addEventListener('focus', () => {
+  const all = getRecentCities();
+  if (all.length > 0) renderDropdown(all);
+});
+
+// Click outside input/dropdown — close dropdown
+document.addEventListener('click', (e) => {
+  if (!cityInput.contains(e.target) && !dropdown.contains(e.target)) {
+    hideDropdown();
+  }
+});
+
+// GPS location button
+locationBtn.addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    showError('Geolocation is not supported by your browser. Please search by city name instead.');
+    return;
+  }
+
+  locationBtn.textContent = '⏳';
+  locationBtn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locationBtn.textContent = '📍';
+      locationBtn.disabled = false;
+      fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+    },
+    (err) => {
+      locationBtn.textContent = '📍';
+      locationBtn.disabled = false;
+
+      if (err.code === 1) { // PERMISSION_DENIED
+        showError('Location access denied. Please allow location permissions in your browser and try again.');
+      } else if (err.code === 2) { // POSITION_UNAVAILABLE
+        showError('Location information is unavailable. Please search by city name instead.');
+      } else if (err.code === 3) { // TIMEOUT
+        showError('Location request timed out. Please try again or search by city name.');
+      } else {
+        showError('Unable to retrieve your location. Please search by city name instead.');
+      }
+    },
+    { timeout: 10000, maximumAge: 300000 }
+  );
+});
+
+// Toggle to Celsius
+btnCelsius.addEventListener('click', () => {
+  if (!isCelsius) {
+    isCelsius = true;
+    btnCelsius.classList.add('active');
+    btnFahrenheit.classList.remove('active');
+    updateTempDisplay();
+  }
+});
+
+// Toggle to Fahrenheit
+btnFahrenheit.addEventListener('click', () => {
+  if (isCelsius) {
+    isCelsius = false;
+    btnFahrenheit.classList.add('active');
+    btnCelsius.classList.remove('active');
+    updateTempDisplay();
+  }
+});
+
+// Close error box
+errorClose.addEventListener('click', hideError);
+
+// Close alert box
+alertClose.addEventListener('click', hideAlert);
